@@ -57,6 +57,7 @@
 
         #no {
             font-size: 16px;
+            visibility: hidden;  /* hide until positioned */
         }
     </style>
 </head>
@@ -69,88 +70,97 @@
     </div>
 
     <script>
-        const app = document.getElementById('app');
-        const yes = document.getElementById('yes');
-        const no = document.getElementById('no');
-        const msg = document.getElementById('msg');
+  const app = document.getElementById('app');
+  const yes = document.getElementById('yes');
+  const no  = document.getElementById('no');
+  const msg = document.getElementById('msg');
 
-        let yesSize = 18;
-        const growStep = 6;
+  let yesSize = 18;
+  const growStep = 6;
+  const margin = 8;
 
-        function rect(el) {
-            return el.getBoundingClientRect();
-        }
+  function rect(el) { return el.getBoundingClientRect(); }
 
-        function overlap(r1, r2) {
-            return !(r1.right <= r2.left ||
-                r2.right <= r1.left ||
-                r1.bottom <= r2.top ||
-                r2.bottom <= r1.top);
-        }
+  function overlap(r1, r2) {
+    return !(r1.right <= r2.left ||
+             r2.right <= r1.left ||
+             r1.bottom <= r2.top ||
+             r2.bottom <= r1.top);
+  }
 
-        function centerNoBelowYes() {
-            const appR = rect(app);
-            const yesR = rect(yes);
+  function clamp(v, lo, hi) {
+    return Math.max(lo, Math.min(v, hi));
+  }
 
-            // Force browser to calculate size first
-            no.style.left = "0px";
-            no.style.top = "0px";
-            const noR = rect(no);
+  function centerNoBelowYes() {
+    const appR = rect(app);
+    const yesR = rect(yes);
+    const noR  = rect(no);
 
-            const x = (appR.width / 2) - (noR.width / 2);
-            const y = (yesR.bottom - appR.top) + 20;
+    const x = (appR.width / 2) - (noR.width / 2);
+    const y = (yesR.bottom - appR.top) + 20;
 
-            no.style.left = x + "px";
-            no.style.top = y + "px";
+    no.style.left = clamp(x, margin, appR.width - noR.width - margin) + "px";
+    no.style.top  = clamp(y, margin, appR.height - noR.height - margin) + "px";
+  }
 
-            // Safety check
-            if (overlap(rect(yes), rect(no))) {
-                teleportNo();
-            }
-        }
+  function teleportNo() {
+    const appR = rect(app);
+    const yesR = rect(yes);
+    const noR  = rect(no);
 
-        function teleportNo() {
-            const appR = rect(app);
-            const yesR = rect(yes);
-            const noR = rect(no);
+    const maxX = appR.width  - noR.width  - margin;
+    const maxY = appR.height - noR.height - margin;
 
-            const margin = 8;
-            const maxX = appR.width - noR.width - margin;
-            const maxY = appR.height - noR.height - margin;
+    for (let i = 0; i < 500; i++) {
+      const x = Math.random() * (maxX - margin) + margin;
+      const y = Math.random() * (maxY - margin) + margin;
 
-            for (let i = 0; i < 500; i++) {
-                const x = Math.random() * (maxX - margin) + margin;
-                const y = Math.random() * (maxY - margin) + margin;
+      no.style.left = x + "px";
+      no.style.top  = y + "px";
 
-                no.style.left = x + "px";
-                no.style.top = y + "px";
+      if (!overlap(yesR, rect(no))) return;
+    }
+  }
 
-                if (!overlap(yesR, rect(no))) return;
-            }
-        }
+  async function initLayout() {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
 
-        yes.addEventListener('click', () => {
-            msg.textContent = "Yay!!! ❤️";
-            yes.style.display = "none";
-            no.style.display = "none";
-        });
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-        no.addEventListener('click', () => {
-            yesSize += growStep;
-            yes.style.fontSize = yesSize + "px"; // stays centered via CSS
-            teleportNo();
-        });
+    centerNoBelowYes();
 
-        // Wait until page fully loads before positioning
-        window.addEventListener('load', () => {
-            centerNoBelowYes();
-        });
+    if (overlap(rect(yes), rect(no))) {
+      teleportNo();
+    }
 
-        window.addEventListener('resize', () => {
-            if (yes.style.display !== "none") {
-                teleportNo();
-            }
-        });
-    </script>
+    no.style.visibility = "visible";  // show after proper positioning
+  }
+
+  yes.addEventListener('click', () => {
+    msg.textContent = "Yay!!! ❤️";
+    yes.style.display = "none";
+    no.style.display = "none";
+  });
+
+  no.addEventListener('click', () => {
+    yesSize += growStep;
+    yes.style.fontSize = yesSize + "px";
+    teleportNo();
+  });
+
+  window.addEventListener('load', initLayout);
+
+  window.addEventListener('resize', () => {
+    if (yes.style.display !== "none") {
+      if (overlap(rect(yes), rect(no))) {
+        teleportNo();
+      }
+    }
+  });
+</script>
 </body>
 </html>
+
