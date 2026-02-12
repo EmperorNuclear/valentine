@@ -1,0 +1,154 @@
+﻿<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Important Question</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #fff;
+        }
+
+        #app {
+            width: min(700px, 92vw);
+            height: min(520px, 80vh);
+            position: relative;
+            border: 1px solid #eee;
+            border-radius: 14px;
+            padding: 24px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        h1 {
+            margin: 0 0 16px 0;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        #msg {
+            text-align: center;
+            font-size: 28px;
+            margin-top: 6px;
+            height: 40px;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 10px 18px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            background: #fafafa;
+            position: absolute;
+            user-select: none;
+        }
+
+        #yes {
+            left: 50%;
+            top: 55%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+        }
+
+        #no {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>Do you want to be my Valentine?</h1>
+        <div id="msg"></div>
+        <button id="yes">Yes</button>
+        <button id="no">No</button>
+    </div>
+
+    <script>
+    const app = document.getElementById('app');
+    const yes = document.getElementById('yes');
+    const no = document.getElementById('no');
+    const msg = document.getElementById('msg');
+
+    let yesSize = 18;
+    const growStep = 6;
+
+    function rect(el) {
+      return el.getBoundingClientRect();
+    }
+    function overlap(r1, r2) {
+      return !(r1.right <= r2.left || r2.right <= r1.left || r1.bottom <= r2.top || r2.bottom <= r1.top);
+    }
+
+    function placeNoBelowYes() {
+      // Put NO below the centered YES to start
+      const appR = rect(app);
+      const yesR = rect(yes);
+
+      // Measure NO
+      const noR = rect(no);
+
+      const x = (yesR.left + yesR.right) / 2 - noR.width / 2 - appR.left;
+      const y = (yesR.bottom - appR.top) + 18;
+
+      no.style.left = Math.max(8, Math.min(x, appR.width - noR.width - 8)) + "px";
+      no.style.top  = Math.max(8, Math.min(y, appR.height - noR.height - 8)) + "px";
+
+      // If small window causes overlap, teleport it
+      teleportNoAvoidingYes();
+    }
+
+    function teleportNoAvoidingYes() {
+      const appR = rect(app);
+
+      // Temporarily ensure NO is measurable
+      const yesR = rect(yes);
+      const noR0 = rect(no);
+
+      const margin = 8;
+      const maxX = Math.max(margin, appR.width - noR0.width - margin);
+      const maxY = Math.max(margin, appR.height - noR0.height - margin);
+
+      for (let i = 0; i < 500; i++) {
+        const x = Math.floor(Math.random() * (maxX - margin + 1)) + margin;
+        const y = Math.floor(Math.random() * (maxY - margin + 1)) + margin;
+
+        no.style.left = x + "px";
+        no.style.top  = y + "px";
+
+        const noR = rect(no);
+        if (!overlap(yesR, noR)) return;
+      }
+      // Fallback
+      no.style.left = margin + "px";
+      no.style.top  = maxY + "px";
+    }
+
+    yes.addEventListener('click', () => {
+      msg.textContent = "Yay!!! ❤️";
+      yes.style.display = "none";
+      no.style.display = "none";
+    });
+
+    no.addEventListener('click', () => {
+      yesSize += growStep;
+      yes.style.fontSize = yesSize + "px"; // grows but stays centered (CSS keeps it centered)
+      teleportNoAvoidingYes();
+    });
+
+    window.addEventListener('resize', () => {
+      // If resizing causes overlap, move NO
+      if (yes.style.display !== "none" && no.style.display !== "none") {
+        teleportNoAvoidingYes();
+      }
+    });
+
+    // Initial layout
+    placeNoBelowYes();
+    </script>
+</body>
+</html>
