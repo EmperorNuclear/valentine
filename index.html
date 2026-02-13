@@ -8,36 +8,55 @@
         body {
             font-family: Brush Script MT, cursive;
             margin: 0;
-            height: 100vh;
-            display: grid;
-            place-items: center;
-            background: #fff;
-            background-color: #fce4ec;
+            background: #fce4ec;
         }
 
+        /* Full-screen, mobile-safe height */
         #app {
             width: 100vw;
-            height: 100dvh; /* mobile-safe viewport height */
-            height: 100vh;
-            max-width: 100%;
-            position: relative;
-            padding: 24px;
+            height: 100dvh;
+            height: 100vh; /* fallback */
+            padding: clamp(12px, 3vw, 24px);
             box-sizing: border-box;
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header {
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .hero {
+            width: min(520px, 88vw);
+            height: auto;
+            display: block;
+            margin: 0 auto 8px auto;
         }
 
         h1 {
-            margin: 0 0 16px 0;
-            font-size: 38px;
+            margin: 0 0 8px 0;
+            font-size: clamp(26px, 6vw, 40px);
             text-align: center;
-            padding: 12px;
         }
 
         #msg {
             text-align: center;
-            font-size: 28px;
-            margin-top: 6px;
-            height: 40px;
+            font-size: clamp(18px, 4.5vw, 28px);
+            height: 1.4em;
+            margin-bottom: 6px;
+        }
+
+        /* The teleport/play area (buttons live INSIDE this) */
+        #stage {
+            position: relative;
+            flex: 1;
+            width: min(900px, 100%);
+            max-width: 100%;
+            overflow: hidden;
         }
 
         button {
@@ -52,53 +71,52 @@
 
         #yes {
             left: 50%;
-            top: 55%;
+            top: 45%;
             transform: translate(-50%, -50%);
             font-size: 18px;
             font-weight: bold;
             font-family: Georgia, sans-serif;
-            color: #e91e63; /* font color */
-            border-color: #e91e63; /* border line color */
-            #background-color: #fce4ec; /* inside box color  */
+            color: #e91e63;
+            border-color: #e91e63;
         }
 
         #no {
             left: 50%;
-            top: calc(55% + 50px); /* below YES */
-            transform: translateX(-50%);
+            top: calc(45% + 60px);
+            transform: translate(-50%, -50%);
             font-size: 16px;
             font-family: Georgia, sans-serif;
             color: #555;
             border-color: #555;
             background-color: #eee;
         }
-
-        .center {
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-            width: 50%;
-        }
     </style>
 </head>
+
 <body>
     <div id="app">
-        <img src="https://pngimg.com/uploads/valentines_day/valentines_day_PNG10792.png" alt="V-DAY" width="150" height="300" class="center">
-        <h1>Will you be my Valentine?</h1>
-        <div id="msg"></div>
-        <button id="yes">YES!!!</button>
-        <button id="no">no.</button>
+        <div class="header">
+            <img src="https://pngimg.com/uploads/valentines_day/valentines_day_PNG10792.png"
+                 alt="V-DAY"
+                 class="hero" />
+            <h1>Will you be my Valentine?</h1>
+            <div id="msg"></div>
+        </div>
+
+        <div id="stage">
+            <button id="yes">YES!!!</button>
+            <button id="no">no.</button>
+        </div>
     </div>
 
     <script>
-        const app = document.getElementById('app');
+        const stage = document.getElementById('stage');
         const yes = document.getElementById('yes');
         const no = document.getElementById('no');
         const msg = document.getElementById('msg');
 
         let yesSize = 18;
         const growStep = 8;
-        const margin = 10;
 
         function rect(el) { return el.getBoundingClientRect(); }
         function overlap(r1, r2) {
@@ -106,40 +124,51 @@
         }
 
         function teleportNo() {
-            const appR = rect(app);
-            const yesR = rect(yes);
-            const noR = rect(no);
+            const pad = 12;
 
-            const pad = 24; // match #app padding (or compute it)
-            const maxX = appR.width - noR.width - pad;
-            const maxY = appR.height - noR.height - pad;
+            const minX = pad;
+            const minY = pad;
+            const maxX = stage.clientWidth - no.offsetWidth - pad;
+            const maxY = stage.clientHeight - no.offsetHeight - pad;
+
+            if (maxX <= minX || maxY <= minY) return;
 
             for (let i = 0; i < 500; i++) {
-                const x = Math.random() * (maxX - pad) + pad;
-                const y = Math.random() * (maxY - pad) + pad;
+                const x = Math.random() * (maxX - minX) + minX;
+                const y = Math.random() * (maxY - minY) + minY;
 
-                no.style.left = x + "px";
-                no.style.top = y + "px";
-                no.style.transform = "none";
+                no.style.left = x + 'px';
+                no.style.top = y + 'px';
+                no.style.transform = 'none'; // true teleport (not centered)
 
-                if (!overlap(yesR, rect(no))) return;
+                // re-check YES after it grows
+                if (!overlap(rect(yes), rect(no))) return;
             }
         }
 
-
         yes.addEventListener('click', () => {
-            msg.textContent = "Yay!!! ❤️";
-            yes.style.display = "none";
-            no.style.display = "none";
+            msg.textContent = 'Yay!!! ❤️';
+            yes.style.display = 'none';
+            no.style.display = 'none';
         });
 
         no.addEventListener('click', () => {
             yesSize += growStep;
-            yes.style.fontSize = yesSize + "px";
+            yes.style.fontSize = yesSize + 'px';
             teleportNo();
+        });
+
+        // keep buttons inside stage on rotate/resize
+        window.addEventListener('resize', () => {
+            const maxX = stage.clientWidth - no.offsetWidth;
+            const maxY = stage.clientHeight - no.offsetHeight;
+
+            const left = parseFloat(no.style.left) || (stage.clientWidth / 2);
+            const top = parseFloat(no.style.top) || (stage.clientHeight / 2);
+
+            no.style.left = Math.min(Math.max(left, 0), maxX) + 'px';
+            no.style.top = Math.min(Math.max(top, 0), maxY) + 'px';
         });
     </script>
 </body>
 </html>
-
-
