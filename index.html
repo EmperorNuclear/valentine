@@ -99,8 +99,10 @@
             <img src="https://pngimg.com/uploads/valentines_day/valentines_day_PNG10792.png"
                  alt="V-DAY"
                  class="hero" />
-            <h1>Will you be my Valentine?</h1>
+            <h1>Chloe Shirvanian, will you be my Valentine?</h1>
             <div id="msg"></div>
+            <img id="valentineImg" src="picture.jpeg" alt="Valentine" class="hero" style="display:none; width:min(420px, 85vw); margin-top:10px; border-radius:18px; box-shadow:0 8px 22px rgba(0,0,0,.15);" />
+
         </div>
 
         <div id="stage">
@@ -148,8 +150,11 @@
 
         yes.addEventListener('click', () => {
             msg.textContent = 'Yay!!! ❤️';
+            
             yes.style.display = 'none';
             no.style.display = 'none';
+
+            document.getElementById('valentineImg').style.display = 'block';
         });
 
         no.addEventListener('click', () => {
